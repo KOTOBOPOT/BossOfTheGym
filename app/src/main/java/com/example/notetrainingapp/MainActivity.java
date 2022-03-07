@@ -1,45 +1,25 @@
 package com.example.notetrainingapp;
-//TODO: сделать так, чтобы приложение именно на телефоне не крашилось
+//TODO: Сделать подтверждение удаления
+//TODO: Сделать цветнцые кнопки
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ShareCompat;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 
+import android.annotation.SuppressLint;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.content.Context;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.HorizontalScrollView;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.TextView;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -48,110 +28,121 @@ public class MainActivity extends AppCompatActivity {
     Button btn_push_main;
     LinearLayout linearLayout_lines_holder;
     String STORAGE_FILE_PATH = "NOTES_STORAGE.txt";//Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)+"/NOTES_STORAGE.txt";
+    FileWorking FileWorking = new FileWorking(STORAGE_FILE_PATH);
+    //
 
+    @SuppressLint("ResourceType")
+    protected void generateLineInMain(ViewGroup lines_holder, String muscles_group_name) {
+        Intent myIntent = new Intent(this, Activity.class);
+        FileWorking FileWorking = new FileWorking(STORAGE_FILE_PATH);
+        Map<String, Map<String, ArrayList<String>>> all_notes_data_map = FileWorking.getFromStorage(STORAGE_FILE_PATH);
+        ConstraintLayout line_main = new ConstraintLayout(getApplicationContext());
+        Button menu_line_button = new Button(getApplicationContext());
+        menu_line_button.setAllCaps(false);
+        menu_line_button.setText(stringCutting(muscles_group_name, 70));/////
+        Button btn_delete_line = new Button(getApplicationContext());
+        btn_delete_line.setText("delete");
+
+        View.OnClickListener listener_go_to_note_activity_Button = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                myIntent.putExtra("muscles_group_name", muscles_group_name);
+                startActivity(myIntent);
+            }
+        };
+        View.OnClickListener listener_deleting_whole_line_Button = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                showDialog();
+                showDialogDeleteLineConfirmation(line_main,STORAGE_FILE_PATH,muscles_group_name);
+  //              if(confirmDialogAnswer()) {
+                 //   FileWorking.delMusclesGroup(STORAGE_FILE_PATH, muscles_group_name);
+                 //   linearLayout_lines_holder.removeView(line_main);//linearLayout_scroll_left_part.removeView(linearLayout_line_left);
+    //            }
+            }
+        };
+        menu_line_button.setOnClickListener(listener_go_to_note_activity_Button);
+        btn_delete_line.setOnClickListener(listener_deleting_whole_line_Button);
+        linearLayout_lines_holder.addView(line_main);
+
+        line_main.addView(menu_line_button);
+        line_main.addView(btn_delete_line);
+        btn_delete_line.setId(1);
+        menu_line_button.setId(2);
+        line_main.getLayoutParams().width = -1;
+
+        int[] chainViews = {menu_line_button.getId(), btn_delete_line.getId()};
+        ConstraintSet set = new ConstraintSet();
+        Log.e("s", "IDS " + Integer.toString(btn_delete_line.getId()));
+        set.clone(line_main);
+        set.constrainWidth(menu_line_button.getId(), ConstraintSet.MATCH_CONSTRAINT);
+        set.constrainWidth(btn_delete_line.getId(), ConstraintSet.MATCH_CONSTRAINT);
+        float[] chainWeights = {4, 1};
+        set.createHorizontalChain(ConstraintSet.PARENT_ID, ConstraintSet.LEFT,
+                ConstraintSet.PARENT_ID, ConstraintSet.RIGHT,
+                chainViews, chainWeights,
+                ConstraintSet.CHAIN_SPREAD);
+        line_main.setConstraintSet(set);
+
+
+}
+
+    @SuppressLint("ResourceType")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        requestPermissions(new String[]{WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE}, 1);
+        requestPermissions(new String[]{WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE}, 1);
 
         FileWorking FileWorking = new FileWorking(STORAGE_FILE_PATH);
-/*        if(!FileWorking.isFileExists(STORAGE_FILE_PATH)){
-            File file = new File(STORAGE_FILE_PATH);
-        }*/
 
         btn_push_main = findViewById(R.id.button_push);
         edit_Text_main = findViewById(R.id.get_text_view);
         linearLayout_lines_holder = findViewById(R.id.line_layout);
-        Intent myIntent = new Intent(this, Activity.class);
-
-        Map<String, Map<String, ArrayList<String>>> all_notes_data_map = FileWorking.getFromStorage(STORAGE_FILE_PATH);//TODO: REALIESE ON CREATE LOAD OF ALL LINES.
-        Log.e("isFileStorageExists?",Boolean.toString(FileWorking.isFileExists(STORAGE_FILE_PATH)));
-       // if(FileWorking.isFileExists(STORAGE_FILE_PATH))
+    //    Intent myIntent = new Intent(this, Activity.class);
+        Map<String, Map<String, ArrayList<String>>> all_notes_data_map = FileWorking.getFromStorage(STORAGE_FILE_PATH);
         for (String muscles_group_name : all_notes_data_map.keySet()) {
-            LinearLayout line_main = new LinearLayout(getApplicationContext());
-            Button menu_line_button = new Button(getApplicationContext());
-            menu_line_button.setText(stringCutting(muscles_group_name, 70));/////
-            Button btn_delete_line = new Button(getApplicationContext());
-            btn_delete_line.setText("delete");
-
-            View.OnClickListener listener_go_to_note_activity_Button = new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    myIntent.putExtra("muscles_group_name", muscles_group_name);
-                    startActivity(myIntent);
-                }
-            };
-            View.OnClickListener listener_deleting_whole_line_Button = new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    FileWorking.delMusclesGroup(STORAGE_FILE_PATH, muscles_group_name);
-                    linearLayout_lines_holder.removeView(line_main);//linearLayout_scroll_left_part.removeView(linearLayout_line_left);
-                }
-            };
-            menu_line_button.setOnClickListener(listener_go_to_note_activity_Button);
-            btn_delete_line.setOnClickListener(listener_deleting_whole_line_Button);
-            line_main.setOrientation(LinearLayout.HORIZONTAL);
-            line_main.addView(menu_line_button);
-            line_main.addView(btn_delete_line);
-            line_main.setGravity(Gravity.RIGHT);
-            linearLayout_lines_holder.addView(line_main);
+            generateLineInMain(linearLayout_lines_holder,muscles_group_name);
         }
-
-
         View.OnClickListener listener_add_Button = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (edit_Text_main.getText().toString().equals("")) {
+                String muscles_group_name = edit_Text_main.getText().toString();
+                if (muscles_group_name.equals("")) {
                     return;
                 }
-                String muscles_group_name = edit_Text_main.getText().toString();
+                if (FileWorking.getFromStorage(STORAGE_FILE_PATH).containsKey(muscles_group_name)) {
+                    return;
+                }
 
-                FileWorking.addNewMusclesGroup(STORAGE_FILE_PATH, muscles_group_name);
-                Log.e("","isFileStorageExists"+Boolean.toString(FileWorking.isFileExists(STORAGE_FILE_PATH)));
-                LinearLayout line_main = new LinearLayout(getApplicationContext());
-                //LinearLayout split_line = new LinearLayout(getApplicationContext());
-                //split_line.setOrientation(LinearLayout.HORIZONTAL);
-                Button menu_line_button = new Button(getApplicationContext());
-                menu_line_button.setText(stringCutting(muscles_group_name, 70));/////
-
-                edit_Text_main.getText().clear();
-                Button btn_delete_line = new Button(getApplicationContext());
-                btn_delete_line.setText("delete");
-
-                View.OnClickListener listener_go_to_note_activity_Button = new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        myIntent.putExtra("muscles_group_name", muscles_group_name);
-                        startActivity(myIntent);
-                    }
-                };
-                View.OnClickListener listener_deleting_whole_line_Button = new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        FileWorking.delMusclesGroup(STORAGE_FILE_PATH, muscles_group_name);
-                        linearLayout_lines_holder.removeView(line_main);//linearLayout_scroll_left_part.removeView(linearLayout_line_left);
-                    }
-                };
-
-                menu_line_button.setOnClickListener(listener_go_to_note_activity_Button);
-                btn_delete_line.setOnClickListener(listener_deleting_whole_line_Button);
-                line_main.setOrientation(LinearLayout.HORIZONTAL);
-                line_main.addView(menu_line_button);
-                line_main.addView(btn_delete_line);
-                line_main.setGravity(Gravity.RIGHT);
-                linearLayout_lines_holder.addView(line_main);
-                line_main.getLayoutParams().width = -1;//MATCH_PARENT
-                //               menu_line_button.getLayoutParams().width = -1;
-
+               generateLineInMain(linearLayout_lines_holder,muscles_group_name);
+               FileWorking.addNewMusclesGroup(STORAGE_FILE_PATH,muscles_group_name);
+               edit_Text_main.getText().clear();
             }
         };
         btn_push_main.setOnClickListener(listener_add_Button);
-
     }
 
+     public boolean confirmDialogAnswer(){
+         boolean dialogAnswer = false;
+         //showDialog();
+         return  dialogAnswer;
+     }
+     //showDialog(line_main,STORAGE_FILE_PATH,muscles_group_name);
+     public void showDialogDeleteLineConfirmation(ViewGroup layoutToDelete, String STORAGE_FILE_PATH, String muscles_group_name) {
+         DialogInterface.OnClickListener positiveOnClickListener = new DialogInterface.OnClickListener() {
+             @Override
+             public void onClick(DialogInterface dialog, int which) {
+                 FileWorking.delMusclesGroup(STORAGE_FILE_PATH, muscles_group_name);
+                 linearLayout_lines_holder.removeView(layoutToDelete);//linearLayout_scroll_left_part.removeView(linearLayout_line_left);
+             }
+         };
+        CustomDialogFragment dialog = new CustomDialogFragment(positiveOnClickListener,null, "Подтверждение","Вы уверены, что хотите удалить \""+ muscles_group_name +"\" ?");
+        dialog.show(getSupportFragmentManager(), "custom");
 
-    private String stringCutting(String string_input, int limit_in_line) {
+     }
+
+    public static String stringCutting(String string_input, int limit_in_line) {
         String result_String = "";
         int last_space_index = -1;
         int last_space_added_index = -1;
@@ -159,10 +150,10 @@ public class MainActivity extends AppCompatActivity {
 
             if ((i - last_space_added_index) == limit_in_line) {
 
-                if ((last_space_index <= last_space_added_index) || (string_input.charAt(i + 1) == ' ')) {//if lenth of word more than limit
+                if ((last_space_index <= last_space_added_index)) {// || (string_input.charAt(i + 1) == ' ')) {//if lenth of word more than limit
                     // OR didnt found a space while parsing
                     result_String += string_input.substring(last_space_added_index + 1, i + 1);
-                    result_String += "\n";
+                    if (i != string_input.length() - 1) result_String += "\n";
                     last_space_added_index = i;
                 } else {
                     result_String += string_input.substring(last_space_added_index + 1, last_space_index + 1);
@@ -182,6 +173,4 @@ public class MainActivity extends AppCompatActivity {
             result_String += string_input.substring(last_space_added_index + 1, string_input.length());
         return result_String;
     }
-
-
 }

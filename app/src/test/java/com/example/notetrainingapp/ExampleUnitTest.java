@@ -1,8 +1,9 @@
 package com.example.notetrainingapp;
 
-import org.junit.Test;
+import org.testng.annotations.Test;
 
 import static org.junit.Assert.*;
+
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -12,6 +13,10 @@ import static org.junit.Assert.*;
 public class ExampleUnitTest {
     @Test
     public void addition_isCorrect() {
-        assertEquals(4, 2 + 2);
+       assertEquals(1,1+5);
+        //String str = MainActivity.stringCutting("1234567890",10);
+        //assertEquals("1234567890", str);
+        //TODO: WHY TESTS DONT LAUNCH
     }
+
 }
